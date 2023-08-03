@@ -12,46 +12,45 @@ import androidx.compose.material.icons.filled.Replay5
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Composable
-fun ExoPlayerControls() {
-    var isPlaying by remember { mutableStateOf(false) }
-
+fun ExoPlayerControls(
+    isPlaying: Boolean,
+    togglePlayState: () -> Unit,
+    onSeekBack: () -> Unit,
+    onSeekForward: () -> Unit,
+) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         ControlButton(
             imageVector = Icons.Default.Replay5,
-            onClick = { /* Handle rewind action */ }
+            onClick = onSeekBack,
         )
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(
             imageVector = Icons.Default.SkipPrevious,
-            onClick = { /* Handle fast forward action */ }
+            onClick = onSeekBack,
         )
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(
             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            onClick = { isPlaying = !isPlaying }
+            onClick = { togglePlayState() }
         )
         Spacer(modifier = Modifier.width(16.dp))
 
         ControlButton(
             imageVector = Icons.Default.SkipNext,
-            onClick = { /* Handle fast forward action */ }
+            onClick = onSeekForward,
         )
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(
             imageVector = Icons.Default.Forward10,
-            onClick = { /* Handle fast forward action */ }
+            onClick = onSeekForward,
         )
     }
 }
