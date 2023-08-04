@@ -1,41 +1,35 @@
-package com.example.shortbooks.composable
+package com.example.shortbooks.playback
 
 import android.annotation.SuppressLint
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Player.STATE_ENDED
 import androidx.media3.exoplayer.ExoPlayer
-import com.example.shortbooks.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.transform
-import java.io.File
+import kotlinx.coroutines.flow.transformLatest
 
 @SuppressLint("UnsafeOptInUsageError")
-class PlaybackStateFacade(context: Context) : CoroutineScope {
+class PlaybackStateFacadeImpl(context: Context) : PlaybackStateFacade, CoroutineScope {
     override val coroutineContext = Job() + Dispatchers.Main
-    val uri = Uri.parse(
-        ContentResolver.SCHEME_ANDROID_RESOURCE
-                + File.pathSeparator + File.separator + File.separator
-                + context.packageName
-                + File.separator
-                + R.raw.antifragile_1
-    )
 
-    val totalDuration = MutableStateFlow(0f)
-    val isPlaying = MutableStateFlow(false)
+    override val totalDuration = MutableStateFlow(0f)
+    override val isPlaying = MutableStateFlow(false)
+    override val playEnded = MutableStateFlow(false)
 
     private val playbackTime = isPlaying
-        .transform { isPlaying ->
+        .transformLatest { isPlaying ->
             if (isPlaying) {
                 while (true) {
                     emit(Unit)
@@ -46,11 +40,17 @@ class PlaybackStateFacade(context: Context) : CoroutineScope {
         .map {
             currentDurationSeconds()
         }
+        .onEach { println("DEBUGGING playbackTime $it") }
         .stateIn(this, SharingStarted.Eagerly, 0f)
 
     private val manualTime = MutableStateFlow(0f)
 
-    val currentTime = merge(playbackTime, manualTime)
+    init {
+        manualTime.onEach { println("DEBUGGING manual time $it") }
+            .launchIn(this)
+    }
+
+    override val currentTime = merge(playbackTime, manualTime)
         .stateIn(this, SharingStarted.Eagerly, 0f)
 
     private val player by lazy {
@@ -66,11 +66,18 @@ class PlaybackStateFacade(context: Context) : CoroutineScope {
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             super.onEvents(player, events)
-            totalDuration.value = totalDurationSeconds(player)
+            val totalDurationSeconds = totalDurationSeconds(player)
+            if (totalDurationSeconds > 0) {
+                totalDuration.value = totalDurationSeconds
+            }
         }
 
         override fun onIsPlayingChanged(playing: Boolean) {
             isPlaying.value = playing
+        }
+
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            playEnded.value = playbackState == STATE_ENDED
         }
     }
 
@@ -78,50 +85,45 @@ class PlaybackStateFacade(context: Context) : CoroutineScope {
 
     private fun currentDurationSeconds() = player.currentPosition.coerceAtLeast(0L).div(1000f)
 
-    fun setPlayback() {
+    override fun setPlayback(url: String) {
         with(player) {
             setMediaItem(
                 MediaItem.fromUri(
-                    uri
+                    Uri.parse(url)
                 )
             )
             prepare()
             playWhenReady = true
         }
+        manualTime.value = 0f
     }
 
-    fun togglePlayState() {
+    override fun togglePlayState() {
         if (player.isPlaying) player.pause() else player.play()
     }
 
-    fun pause() {
+    private fun pause() {
         player.pause()
     }
 
-    fun play() {
+    private fun play() {
         player.play()
     }
 
-    fun seekTo(time: Float) {
+    private fun seekTo(time: Float) {
         player.seekTo(time.toLong())
         play()
-        manualTime.value = currentDurationSeconds()
     }
 
-    fun seekBack() {
+    override fun seekBack() {
         player.seekBack()
     }
 
-    fun seekForward() {
+    override fun seekForward() {
         player.seekForward()
     }
 
-    fun setManualTime(time: Float) {
-        manualTime.value = time
-        if (player.isPlaying) pause()
-    }
-
-    fun applyManualTime() {
-        seekTo(manualTime.value * 1000)
+    override fun applyManualTime(time: Float) {
+        seekTo(time * 1000)
     }
 }

@@ -19,9 +19,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ExoPlayerControls(
     isPlaying: Boolean,
+    canSkipForward: Boolean,
+    canSkipBack: Boolean,
     togglePlayState: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
+    onSkipBack: () -> Unit,
+    onSkipForward: () -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -34,7 +38,8 @@ fun ExoPlayerControls(
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(
             imageVector = Icons.Default.SkipPrevious,
-            onClick = onSeekBack,
+            onClick = onSkipBack,
+            enabled = canSkipBack,
         )
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(
@@ -45,7 +50,8 @@ fun ExoPlayerControls(
 
         ControlButton(
             imageVector = Icons.Default.SkipNext,
-            onClick = onSeekForward,
+            onClick = onSkipForward,
+            enabled = canSkipForward,
         )
         Spacer(modifier = Modifier.width(16.dp))
         ControlButton(

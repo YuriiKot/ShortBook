@@ -9,9 +9,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ControlButton(imageVector: ImageVector, onClick: () -> Unit) {
+fun ControlButton(
+    imageVector: ImageVector,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+) {
     IconButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
     ) {
         Icon(

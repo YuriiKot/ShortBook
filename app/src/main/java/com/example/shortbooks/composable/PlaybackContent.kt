@@ -12,27 +12,32 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shortbooks.R
 import com.example.shortbooks.ui.theme.ShortBooksTheme
-import androidx.compose.runtime.getValue
 
 @Composable
-fun PlaybackContent() {
-    val context = LocalContext.current
-    val container = remember { PlaybackStateFacade(context) }
-    val totalSeconds by container.totalDuration.collectAsState()
-    val currentSeconds by container.currentTime.collectAsState()
-    val isPlaying by container.isPlaying.collectAsState()
-    container.setPlayback()
+fun PlaybackContent(
+    currentStep: Int,
+    totalSteps: Int,
+    keyPointDescription: String,
+    currentSeconds: Float,
+    totalSeconds: Float,
+    isPlaying: Boolean,
+    canSkipForward: Boolean,
+    canSkipBack: Boolean,
+    togglePlayState: () -> Unit,
+    onSeekBack: () -> Unit,
+    onSeekForward: () -> Unit,
+    onSkipBack: () -> Unit,
+    onSkipForward: () -> Unit,
+    applyManualTime: (timeSeconds: Float) -> Unit,
+) {
     Scaffold(
         topBar = {
             CloseButtonAppBar()
@@ -58,12 +63,12 @@ fun PlaybackContent() {
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Step 1/7",
+                        text = "Key point ${currentStep + 1} of $totalSteps".uppercase(),
                         modifier = Modifier.wrapContentHeight()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "One two description" + "\n".repeat(2),
+                        text = keyPointDescription + "\n ".repeat(2),
                         textAlign = TextAlign.Center,
                         maxLines = 3,
                         modifier = Modifier
@@ -73,15 +78,18 @@ fun PlaybackContent() {
                     SliderWithTime(
                         currentSeconds = currentSeconds,
                         totalSeconds = totalSeconds,
-                        postManualTime = { container.setManualTime(it) },
-                        applyManualTime = { container.applyManualTime() }
+                        applyManualTime = applyManualTime,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     ExoPlayerControls(
                         isPlaying = isPlaying,
-                        togglePlayState = { container.togglePlayState() },
-                        onSeekBack = { container.seekBack() },
-                        onSeekForward = { container.seekForward() },
+                        canSkipForward = canSkipForward,
+                        canSkipBack = canSkipBack,
+                        togglePlayState = togglePlayState,
+                        onSeekBack = onSeekBack,
+                        onSeekForward = onSeekForward,
+                        onSkipBack = onSkipBack,
+                        onSkipForward = onSkipForward,
                     )
                     Spacer(modifier = Modifier.height(64.dp))
                     CustomSwitch()
@@ -97,6 +105,21 @@ fun PlaybackContent() {
 @Composable
 fun PlaybackContentPreview() {
     ShortBooksTheme {
-        PlaybackContent()
+        PlaybackContent(
+            currentStep = 1,
+            totalSteps = 2,
+            keyPointDescription = "Description of key point 1",
+            currentSeconds = 12f,
+            totalSeconds = 120f,
+            isPlaying = true,
+            canSkipForward = true,
+            canSkipBack = false,
+            togglePlayState = {  },
+            onSeekBack = {  },
+            onSeekForward = { },
+            onSkipBack = {  },
+            onSkipForward = {  },
+            applyManualTime = { }
+        )
     }
 }
